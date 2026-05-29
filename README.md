@@ -114,6 +114,10 @@ ML-система batch-processing типа.
 
 Заявляемый уровень зрелости ML-системы: уровень 2.
 
+Исходная архитектура уже реализованной системы:
+<img width="1791" height="751" alt="Flocktory drawio" src="https://github.com/user-attachments/assets/8aa57c5a-2b11-44bc-8b19-0813837b5ba1" />
+
+К какому виду будет приведена при уровне зрелости 2:
 <img width="1999" height="1268" alt="изображение" src="https://github.com/user-attachments/assets/f99f52f0-85fa-4c44-88c4-d78c7f30f1db" />
 
 Обоснование: система предполагает версионирование кода, CI/CD, feature store или его упрощённый аналог, model registry, мониторинг качества, оркестратор retraining pipeline и механизм принятия решения о переводе новой модели в production.
