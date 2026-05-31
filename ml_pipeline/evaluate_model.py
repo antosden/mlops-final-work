@@ -12,7 +12,7 @@ MLFLOW_TRACKING_URI = os.getenv(
 EXPERIMENT_NAME = "profile-deduplication"
 
 BASELINE_RUN_NAME = "baseline_catboost"
-CANDIDATE_RUN_NAME = "lightgbm_candidate"
+CANDIDATE_RUN_NAME = "lightgbm"
 
 MIN_PRECISION = 0.90
 MIN_F1_DELTA = 0.00
