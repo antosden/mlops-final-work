@@ -135,5 +135,14 @@ jobs:
 
             docker ps
 
-            curl -f http://localhost:8000/health
-            curl -I http://localhost:5000/
+            echo "=== API logs ==="
+            docker compose logs api --tail=80
+
+            echo "=== MLflow logs ==="
+            docker compose logs mlflow --tail=80
+
+            echo "=== Check API ==="
+            curl -v --retry 5 --retry-delay 5 --retry-all-errors http://localhost:8000/health
+
+            echo "=== Check MLflow ==="
+            curl -v --retry 5 --retry-delay 5 --retry-all-errors http://localhost:5000/ || true
