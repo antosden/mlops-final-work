@@ -1,5 +1,5 @@
-# Flocktory Dedublication system - MLOps
-Реализация полной ML-системы по проекту дедубликации профелей маркетплейсов для Flocktory - https://github.com/antosden/flocktory-dedublication-system.git
+# Dedublication system - MLOps
+Реализация полной ML-системы по проекту дедубликации профелей маркетплейсов из моего портфолио - https://github.com/antosden/flocktory-dedublication-system.git
 В рамках проекта была реализована система, упакованная в Docker Compose, но без CI/CD и MLOps. 
 Данные компоненты будут доработана в данном репозитории.
 
