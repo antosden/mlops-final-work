@@ -11,4 +11,4 @@ COPY api ./api
 
 EXPOSE 8000
 
-CMD ["uvicorn", "api.main:app", "--host", "${API_HOST}", "--port", "${API_PORT}"]
+CMD ["uvicorn", "api.main:app", "--host", "${HOST}", "--port", "${PORT}"]
