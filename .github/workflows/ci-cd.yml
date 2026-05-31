@@ -105,3 +105,35 @@ jobs:
 
           echo "Service URL: $SERVICE_URL"
           curl -f "$SERVICE_URL/health"
+      
+  deploy-vm:
+    name: Deploy full stack to GCE VM
+    runs-on: ubuntu-latest
+    needs: ci
+
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Deploy via SSH to Google Compute Engine VM
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.GCE_HOST }}
+          username: ${{ secrets.GCE_USER }}
+          key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            cd ${{ secrets.GCE_PROJECT_PATH }}
+
+            git fetch origin
+            git reset --hard origin/master
+
+            docker compose down
+            docker compose up -d --build --force-recreate
+
+            sleep 20
+
+            docker ps
+
+            curl -f http://localhost:8080/health
+            curl -I http://localhost:5000/
