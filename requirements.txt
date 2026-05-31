@@ -1,0 +1,16 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+pandas==2.2.3
+numpy==1.26.4
+scikit-learn==1.5.2
+lightgbm==4.5.0
+catboost==1.2.7
+joblib==1.4.2
+pyarrow==17.0.0
+mlflow==3.12.0
+boto3==1.35.81
+psycopg2-binary==2.9.10
+
+pytest==8.3.4
+requests==2.32.3
