@@ -135,5 +135,5 @@ jobs:
 
             docker ps
 
-            curl -f http://localhost:8080/health
+            curl -f http://localhost:8000/health
             curl -I http://localhost:5000/
