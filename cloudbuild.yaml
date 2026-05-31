@@ -1,0 +1,13 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --no-cache
+      - -f
+      - api/Dockerfile
+      - -t
+      - europe-west1-docker.pkg.dev/mlops-final-work/flocktory-mlops-repo/flocktory-mlops-api:latest
+      - .
+
+images:
+  - europe-west1-docker.pkg.dev/mlops-final-work/flocktory-mlops-repo/flocktory-mlops-api:latest
