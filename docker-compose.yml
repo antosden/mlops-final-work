@@ -33,3 +33,6 @@ services:
       - mlflow
 
     restart: unless-stopped
+
+volumes:
+  mlflow_data:
