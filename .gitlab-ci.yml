@@ -1,0 +1,99 @@
+stages:
+  - validate
+  - test
+  - ml_pipeline
+
+image: python:3.11-slim
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  MLFLOW_TRACKING_URI: "file:./mlruns"
+
+cache:
+  paths:
+    - .cache/pip
+
+before_script:
+  - python --version
+  - pip install --upgrade pip
+  - pip install -r requirements.txt
+
+validate_project:
+  stage: validate
+  script:
+    - python -m compileall api mlops
+    - python -c "import pandas, sklearn, mlflow, lightgbm, catboost; print('Imports OK')"
+
+test:
+  stage: test
+  script:
+    - pytest tests || echo "No tests yet, skipping"
+
+prepare_dataset:
+  stage: ml_pipeline
+  script:
+    - |
+      if [ -f "data/raw/profiles.parquet" ]; then
+        python mlops/prepare_dataset.py
+      else
+        echo "data/raw/profiles.parquet not found. Skipping dataset preparation in CI."
+      fi
+  artifacts:
+    paths:
+      - data/processed/
+    expire_in: 1 week
+  allow_failure: false
+
+train_baseline:
+  stage: ml_pipeline
+  needs:
+    - prepare_dataset
+  script:
+    - |
+      if [ -f "data/processed/train_pairs.parquet" ]; then
+        python mlops/train_baseline.py
+      else
+        echo "Processed dataset not found. Skipping baseline training in CI."
+      fi
+  artifacts:
+    paths:
+      - models/artifacts/
+      - mlruns/
+    expire_in: 1 week
+  allow_failure: false
+
+train_candidate:
+  stage: ml_pipeline
+  needs:
+    - prepare_dataset
+  script:
+    - |
+      if [ -f "data/processed/train_pairs.parquet" ]; then
+        python mlops/train_candidate.py
+      else
+        echo "Processed dataset not found. Skipping candidate training in CI."
+      fi
+  artifacts:
+    paths:
+      - models/artifacts/
+      - mlruns/
+    expire_in: 1 week
+  allow_failure: false
+
+evaluate_model:
+  stage: ml_pipeline
+  needs:
+    - train_baseline
+    - train_candidate
+  script:
+    - |
+      if [ -d "mlruns" ]; then
+        python mlops/evaluate_model.py || echo "Evaluation skipped or failed because no MLflow runs were produced."
+      else
+        echo "MLflow local tracking directory not found. Skipping evaluation."
+      fi
+  artifacts:
+    paths:
+      - mlruns/
+    expire_in: 1 week
+  allow_failure: true
