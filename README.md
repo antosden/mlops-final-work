@@ -118,7 +118,7 @@ ML-система batch-processing типа.
 Исходная архитектура уже реализованной системы:
 <img width="1791" height="751" alt="Flocktory drawio" src="https://github.com/user-attachments/assets/8aa57c5a-2b11-44bc-8b19-0813837b5ba1" />
 
-К какому виду будет приведена при уровне зрелости 2:
+Необходимо привести часть ML Pipeline к архитектуре уровня зрелости 2:
 <img width="1999" height="1268" alt="изображение" src="https://github.com/user-attachments/assets/f99f52f0-85fa-4c44-88c4-d78c7f30f1db" />
 
 Обоснование: система предполагает версионирование кода, CI/CD, feature store или его упрощённый аналог, model registry, мониторинг качества, оркестратор retraining pipeline и механизм принятия решения о переводе новой модели в production.
@@ -275,13 +275,17 @@ MDD будет использоваться: да.
 Создайте с помощью любого декларативного инструмента инфраструктуру с таким количеством компонентов, которое требуется для выбранной архитектуры ML-системы. Не нужно гнаться за модой — включать сразу все возможные компоненты из перечня.
 
 Развёрнутое решение в GCD: http://34.76.222.57:5000/
+![alt text](image.png)
 
 API healthcheck: http://34.76.222.57:8000/health
 
+Деинсталляция: 
+```
+docker compose down -v --remove-orphans
+```
+
 ## Шаг 4. Управление рисками. 
 Ни одна система не имеет 100% надежности, но тем не менее для каждого компонента инфраструктуры напишите индикатор SLI и SLO, который показывает нормальную работу системы.
-
-monitoring\metrics.md
 
 ### SLI/SLO для MLOps-системы дедупликации профилей
 
@@ -355,6 +359,8 @@ monitoring\metrics.md
 - `offline_feature_store/features/train_pairs.parquet`
 - `offline_feature_store/features/validation_pairs.parquet`
 - `offline_feature_store/features/test_pairs.parquet`
+
+![alt text](image-1.png)
 
 **SLI**
 
@@ -498,8 +504,6 @@ monitoring\metrics.md
 
 ## Шаг 5. Принятие решений по Metrics Driven Development. 
 Вам предоставлены 2 набора данных по времени отклика (latency) и визуализация. Как вы будете в будущем улучшать систему? Продемонстрируйте навык обоснования архитектурного решения по MDD. 
-
-decisions\mdd_experiment.md
 
 ### MDD-эксперимент: сравнение baseline и candidate модели
 
