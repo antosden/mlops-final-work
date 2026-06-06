@@ -1,134 +1,127 @@
-# MDD-эксперимент: сравнение baseline и candidate модели
+## Шаг 5. Принятие решений по Metrics Driven Development
 
-## 1. Цель эксперимента
+### 1. Цель MDD-анализа
 
-Цель эксперимента — проверить, можно ли заменить baseline-модель на candidate-модель в системе дедупликации профилей клиентов.
+Цель анализа — проверить, действительно ли улучшенная архитектура системы снижает latency backend-сервиса.
 
-Система решает задачу бинарной классификации пары профилей:
+В рамках задания сравниваются два набора данных:
 
-- `1` — профили принадлежат одному пользователю;
-- `0` — профили принадлежат разным пользователям.
+- `existing_system_responses` — latency существующей системы;
+- `improved_system_responses` — latency улучшенной системы.
 
-Основной бизнес-риск — ошибочное автоматическое объединение разных пользователей. Поэтому ключевой метрикой является Precision.
+Решение принимается не визуально, а на основе статистического теста.
 
 ---
 
-## 2. Гипотеза
+### 2. Метрика
 
-Candidate-модель LightGBM должна показывать качество не хуже baseline-модели CatBoost и проходить минимальный порог Precision.
+Основная метрика:
 
-Гипотеза:
+- latency, seconds.
 
-```text
-LightGBM candidate может быть переведён в production,
-если validation_precision >= 0.90
-и validation_f1 >= baseline_validation_f1.
-```
+Дополнительно анализируются:
 
-## 3. Данные
+- mean latency;
+- p95 latency;
+- p99 latency.
 
-Для эксперимента использовался датасет пар профилей.
+Latency выбрана как техническая SLI, потому что backend-сервис должен быстро отвечать на запросы пользователей и других систем.
 
-Исходные данные:
+---
 
-offline_feature_store/raw/profiles.parquet
+### 3. Визуализация распределений
 
-После подготовки данных формируются feature datasets:
+Для первичного анализа были построены KDE-графики распределений latency для существующей и улучшенной системы.
 
-offline_feature_store/features/train_pairs.parquet
-offline_feature_store/features/validation_pairs.parquet
-offline_feature_store/features/test_pairs.parquet
+По графику видно, что распределение улучшенной системы смещено влево, то есть новая система в среднем отвечает быстрее.
 
-Разбиение выполняется по entity_id, чтобы один и тот же реальный пользователь не попадал одновременно в train, validation и test. Это снижает риск data leakage.
+Однако визуального сравнения недостаточно, поэтому далее была проведена статистическая проверка гипотез.
 
-## 4. Модели
+---
 
-В эксперименте сравниваются две модели.
+### 4. Гипотезы
 
-Baseline model
-CatBoostClassifier
+H0: среднее время отклика улучшенной системы не меньше среднего времени отклика существующей системы.
 
-Роль baseline-модели — дать начальную точку сравнения качества.
+Формально:
 
-Candidate model
-LightGBMClassifier
+H0: mean_improved >= mean_existing
 
-Candidate-модель рассматривается как новая версия модели, которую можно перевести в production только после прохождения quality gate.
+H1: среднее время отклика улучшенной системы меньше среднего времени отклика существующей системы.
 
-## 5. Метрики
+Формально:
 
-Для оценки качества использовались offline-метрики:
+H1: mean_improved < mean_existing
 
-Precision;
-Recall;
-F1-score;
-ROC-AUC.
+---
 
-Основные метрики для принятия решения:
+### 5. Уровень значимости
 
-validation_precision
-validation_f1
+Для проверки гипотез выбран уровень значимости:
 
-Дополнительно анализировались:
+alpha = 0.05
 
-test_precision
-test_recall
-test_f1
-test_roc_auc
+Это означает, что мы допускаем вероятность ошибки первого рода 5%.
 
-## 6. Quality Gate
+---
 
-Candidate-модель допускается к promotion только при выполнении условий:
+### 6. Статистический тест
 
-validation_precision >= 0.90
-candidate_validation_f1 >= baseline_validation_f1
+Для сравнения двух независимых выборок latency был выбран Welch's t-test.
 
-Если хотя бы одно условие не выполнено, candidate-модель отклоняется.
+Причины выбора:
 
-## 7. Результат эксперимента
+- сравниваются две независимые выборки;
+- анализируется различие средних значений latency;
+- Welch's t-test не требует равенства дисперсий.
 
-По результатам запуска MLOps-пайплайна candidate-модель LightGBM показала метрики выше baseline-модели на test-наборе и прошла quality gate.
+---
 
-Решение:
+### 7. Код статистического анализа
 
-PROMOTE_CANDIDATE
+```python
+import numpy as np
+from scipy import stats
 
-Candidate-модель была зарегистрирована в MLflow Model Registry и получила alias:
+np.random.seed(42)
 
-production
+existing_system_responses = np.random.normal(loc=3.5, scale=0.4, size=500000)
+improved_system_responses = np.random.normal(loc=2.0, scale=0.4, size=500000)
 
-## 8. Интерпретация результата
+existing_mean = np.mean(existing_system_responses)
+improved_mean = np.mean(improved_system_responses)
 
-Результат показывает, что новая модель может быть использована вместо baseline, так как она:
+existing_p95 = np.percentile(existing_system_responses, 95)
+improved_p95 = np.percentile(improved_system_responses, 95)
 
-достигает минимального порога Precision;
-не ухудшает F1 относительно baseline;
-логируется и воспроизводится через MLflow;
-проходит формальный quality gate перед promotion.
+existing_p99 = np.percentile(existing_system_responses, 99)
+improved_p99 = np.percentile(improved_system_responses, 99)
 
-Такой подход снижает риск случайного выката модели с худшим качеством.
+t_stat, p_two_sided = stats.ttest_ind(
+    improved_system_responses,
+    existing_system_responses,
+    equal_var=False
+)
 
-## 9. Ограничения эксперимента
+p_value = p_two_sided / 2
+alpha = 0.05
 
-Ограничения текущего эксперимента:
+latency_reduction = (existing_mean - improved_mean) / existing_mean * 100
 
-оценка выполнена offline;
-нет live feedback от ручной проверки дублей;
-нет production data drift monitoring;
-порог 0.90 выбран как учебный бизнес-порог и может быть пересмотрен после накопления реальных данных;
-тестовая выборка отражает текущую структуру датасета, но не гарантирует устойчивость на будущих данных.
+print("Existing mean latency:", round(existing_mean, 4))
+print("Improved mean latency:", round(improved_mean, 4))
 
-## 10. Вывод
+print("Existing p95 latency:", round(existing_p95, 4))
+print("Improved p95 latency:", round(improved_p95, 4))
 
-MDD-подход позволил принять решение о promotion модели на основе измеримых метрик, а не вручную.
+print("Existing p99 latency:", round(existing_p99, 4))
+print("Improved p99 latency:", round(improved_p99, 4))
 
-В рамках учебной MLOps-системы реализован следующий цикл:
+print("t-statistic:", t_stat)
+print("one-sided p-value:", p_value)
+print("Latency reduction:", round(latency_reduction, 2), "%")
 
-baseline training;
-candidate training;
-metrics logging;
-quality gate;
-promotion decision;
-production alias in MLflow.
-
-Это закрывает ключевое требование управляемого жизненного цикла ML-модели.
+if p_value < alpha and improved_mean < existing_mean:
+    print("H0 rejected: improved system has statistically lower latency.")
+else:
+    print("H0 not rejected: no statistically significant latency improvement.")
